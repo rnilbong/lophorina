@@ -10,4 +10,4 @@ lophorina is simple local load balancer.
 
 ### Feature
 
-- Distributing http request and return response. (L7)
+- Distributing http request and returning response. (L7)
