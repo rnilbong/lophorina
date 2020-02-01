@@ -2,10 +2,10 @@
 
 ![Bird Lophorina](./images/Lophorina.jpg)
 
-## lophorina
+## What is it?
 
 lophorina is simple local load balancer.
 
-### feature
+### Feature
 
-- Distributing http request and return response
+- Distributing http request and return response. (L7)
