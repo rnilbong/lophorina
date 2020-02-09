@@ -1,5 +1,6 @@
-package org.rnilbong.lophorina.core;
+package org.rnilbong.lophorina.sample.ktp;
 
+import org.rnilbong.lophorina.sample.ktp.core.RequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

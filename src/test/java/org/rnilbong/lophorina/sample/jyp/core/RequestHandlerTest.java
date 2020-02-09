@@ -1,10 +1,10 @@
-package org.rnilbong.lophorina.core;
+package org.rnilbong.lophorina.sample.jyp.core;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SocketThreadTest {
+class RequestHandlerTest {
 
     @Test
     void run() {

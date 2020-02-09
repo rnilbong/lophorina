@@ -7,8 +7,27 @@
 
 ## What is it?
 
-lophorina is simple local load balancer.
+lophorina is simple local load balancer. (L7)
+- Distributing http request to local server and returning response to client.
+
+![Diagram](./images/diagram.png)
 
 ### Feature
 
-- Distributing http request to local server and returning response to client. (L7)
+Simple configuration
+- Using with minimum configuration.
+    - target port (target count)
+    - logging
+- Providing simple GUI configuragion page.
+
+Distributing request
+- Distributing request Randomly.
+- Distributing request to fixed rate.
+    - A/B test
+    - Canary test
+
+Health check
+- Checking the status of the connected service.
+
+Logging
+- logging request and response process.

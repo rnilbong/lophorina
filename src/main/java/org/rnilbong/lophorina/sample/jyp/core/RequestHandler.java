@@ -1,11 +1,11 @@
-package org.rnilbong.lophorina.core;
+package org.rnilbong.lophorina.sample.jyp.core;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.Socket;
+import java.net.URLConnection;
 import java.util.StringTokenizer;
 
-public class SocketThread extends Thread {
+public class RequestHandler extends Thread {
     // 파일 요청이 없을 경우의 기본 파일
     private static final String DEFAULT_FILE_PATH = "images/Lophorina.jpg";
 
@@ -19,7 +19,7 @@ public class SocketThread extends Thread {
      *
      * @param connectionSocket 클라이언트와의 통신을 위한 소켓
      */
-    public SocketThread(Socket connectionSocket) {
+    public RequestHandler(Socket connectionSocket) {
         this.connectionSocket = connectionSocket;
     }
 
@@ -64,8 +64,7 @@ public class SocketThread extends Thread {
                 // 요청한 파일이 존재하는가?
                 if (file.exists()) {
                     // 존재하는 파일의 MIME타입을 분석한다.
-                    String mimeType = new MimetypesFileTypeMap()
-                            .getContentType(file);
+                    String mimeType = URLConnection.guessContentTypeFromName(file.getPath());
 
                     // 파일의 바이트수를 찾아온다.
                     int numOfBytes = (int) file.length();
