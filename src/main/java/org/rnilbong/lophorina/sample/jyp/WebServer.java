@@ -1,26 +1,26 @@
 package org.rnilbong.lophorina.sample.jyp;
 
 import org.rnilbong.lophorina.sample.jyp.core.RequestHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class WebServer {
+    private static final Logger logger = LoggerFactory.getLogger(WebServer.class);
 
     public static void main(String[] args) {
         ServerSocket listenSocket;
         try {
             listenSocket = new ServerSocket(80);
-            System.out.println("WebServer Socket Created");
+            logger.debug("WebServer Socket Created");
 
             Socket connectionSocket;
             RequestHandler requestHandler;
 
-            // 순환을 돌면서 클라이언트의 접속을 받는다.
-            // accept()는 Blocking 메서드이다.
             while ((connectionSocket = listenSocket.accept()) != null) {
-                // 서버 쓰레드를 생성하여 실행한다.
                 requestHandler = new RequestHandler(connectionSocket);
                 requestHandler.start();
             }

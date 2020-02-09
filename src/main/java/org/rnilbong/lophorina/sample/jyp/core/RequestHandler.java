@@ -1,112 +1,95 @@
 package org.rnilbong.lophorina.sample.jyp.core;
 
+import org.rnilbong.lophorina.sample.jyp.utils.HttpUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.URLConnection;
 import java.util.StringTokenizer;
 
 public class RequestHandler extends Thread {
-    // 파일 요청이 없을 경우의 기본 파일
+    private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private static final String DEFAULT_FILE_PATH = "images/Lophorina.jpg";
-
-    // 클라이언트와의 접속 소켓
     private Socket connectionSocket;
 
-    /**
-     * <pre>
-     * 기본 생성자
-     * </pre>
-     *
-     * @param connectionSocket 클라이언트와의 통신을 위한 소켓
-     */
     public RequestHandler(Socket connectionSocket) {
         this.connectionSocket = connectionSocket;
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Thread#run()
-     */
     @Override
     public void run() {
-        System.out.println("WebServer Thread Created");
+        logger.debug("WebServer Thread Created");
         BufferedReader inFromClient;
         DataOutputStream outToClient;
 
         try {
-            // 클라이언트와 통신을 위한 입/출력 2개의 스트림을 생성한다.
             inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
             outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 
-            // 클라이언트로의 메시지중 첫번째 줄을 읽어들인다.
             String requestMessageLine = inFromClient.readLine();
-
-            // 파싱을 위한 토큰을 생성한다.
             StringTokenizer tokenizedLine = new StringTokenizer(requestMessageLine);
 
-            // 첫번째 토큰이 GET으로 시작하는가? ex) GET /green.jpg
-            if (tokenizedLine.nextToken().equals("GET")) {
-                // 다음의 토큰은 파일명이다.
-                String fileName = tokenizedLine.nextToken();
+            String requestMethod = tokenizedLine.nextToken();
+            String requestUrl = "";
 
-                // 기본적으로 루트(/)로부터 주소가 시작하므로 제거한다.
-                if (fileName.startsWith("/")) {
-                    if (fileName.length() > 1) {
-                        fileName = fileName.substring(1);
-                    }
-                    // 파일명을 따로 입력하지 않았을 경우 기본 파일을 출력한다.
-                    else {
-                        fileName = DEFAULT_FILE_PATH;
-                    }
-                }
-
-                File file = new File(fileName);
-
-                // 요청한 파일이 존재하는가?
-                if (file.exists()) {
-                    // 존재하는 파일의 MIME타입을 분석한다.
-                    String mimeType = URLConnection.guessContentTypeFromName(file.getPath());
-
-                    // 파일의 바이트수를 찾아온다.
-                    int numOfBytes = (int) file.length();
-
-                    // 파일을 스트림을 읽어들일 준비를 한다.
-                    FileInputStream inFile = new FileInputStream(fileName);
-                    byte[] fileInBytes = new byte[numOfBytes];
-                    inFile.read(fileInBytes);
-
-                    // 정상적으로 처리가 되었음을 나타내는 200 코드를 출력한다.
-                    outToClient.writeBytes("HTTP/1.0 200 Document Follows \r\n");
-                    outToClient.writeBytes("Content-Type: " + mimeType + "\r\n");
-
-                    // 출력할 컨텐츠의 길이를 출력
-                    outToClient.writeBytes("Content-Length: " + numOfBytes + "\r\n");
-                    outToClient.writeBytes("\r\n");
-
-                    // 요청 파일을 출력한다.
-                    outToClient.write(fileInBytes, 0, numOfBytes);
-                } else {
-                    // 파일이 존재하지 않는다는 에러인 404 에러를 출력하고 접속을 종료한다.
-                    System.out.println("Requested File Not Found : " + fileName);
-
-                    outToClient.writeBytes("HTTP/1.0 404 Not Found \r\n");
-                    outToClient.writeBytes("Connection: close\r\n");
-                    outToClient.writeBytes("\r\n");
-                }
+            if (requestMethod.equals("GET")) {
+                requestUrl = tokenizedLine.nextToken();
+                HttpUtil.get("http://localhost" + ":8080" + requestUrl + "v1/sample");
+            } else if(requestMethod.equals("POST")) {
+                requestUrl = tokenizedLine.nextToken();
+                HttpUtil.post("http://localhost" + ":8080" + requestUrl + "v1/sample", "[\n" +
+                        "  \"1\",\n" +
+                        "  \"2\",\n" +
+                        "  \"3\"\n" +
+                        "]");
             } else {
-                // 잘못된 요청임을 나타내는 400 에러를 출력하고 접속을 종료한다.
-                System.out.println("Bad Request");
-
                 outToClient.writeBytes("HTTP/1.0 400 Bad Request Message \r\n");
                 outToClient.writeBytes("Connection: close\r\n");
                 outToClient.writeBytes("\r\n");
+                logger.error("Bad Request");
             }
 
+            getMainImage(requestUrl, outToClient);
+
             connectionSocket.close();
-            System.out.println("Connection Closed");
-        }
-        // 예외 처리
-        catch (IOException ioe) {
+            logger.debug("Connection Closed");
+        } catch (IOException ioe) {
+            logger.error(ioe.getLocalizedMessage());
             ioe.printStackTrace();
+        }
+    }
+
+    private void getMainImage(String requestUrl, DataOutputStream outToClient) throws IOException {
+        if (requestUrl.startsWith("/")) {
+            if (requestUrl.length() > 1) {
+                requestUrl = requestUrl.substring(1);
+            } else {
+                requestUrl = DEFAULT_FILE_PATH;
+            }
+        }
+
+        File file = new File(requestUrl);
+        if (file.exists()) {
+            String mimeType = URLConnection.guessContentTypeFromName(file.getPath());
+
+            int numOfBytes = (int) file.length();
+
+            FileInputStream inFile = new FileInputStream(requestUrl);
+            byte[] fileInBytes = new byte[numOfBytes];
+            inFile.read(fileInBytes);
+            outToClient.writeBytes("HTTP/1.0 200 Document Follows \r\n");
+            outToClient.writeBytes("Content-Type: " + mimeType + "\r\n");
+            outToClient.writeBytes("Content-Length: " + numOfBytes + "\r\n");
+            outToClient.writeBytes("\r\n");
+
+            outToClient.write(fileInBytes, 0, numOfBytes);
+        } else {
+            outToClient.writeBytes("HTTP/1.0 404 Not Found \r\n");
+            outToClient.writeBytes("Connection: close\r\n");
+            outToClient.writeBytes("\r\n");
+            logger.error("Requested File Not Found : " + requestUrl);
         }
     }
 }
