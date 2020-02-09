@@ -18,8 +18,9 @@ Simple configuration
 - Using with minimum configuration.
     - target port (target count)
     - logging
-- Providing simple configuration file format.
-- Providing simple GUI configuration page.
+- Providing simple configuration
+    - file
+    - administration page
 
 Distributing request
 - Distributing request Randomly.
