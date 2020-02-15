@@ -14,29 +14,32 @@ import org.slf4j.LoggerFactory;
 public class HttpUtil {
     private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
 
-    public static void get(String requestURL) {
+    public static HttpResponse get(String requestURL) throws Exception {
+        HttpResponse response;
         try {
             HttpClient client = HttpClientBuilder.create().build();
             HttpGet getRequest = new HttpGet(requestURL);
 
-            HttpResponse response = client.execute(getRequest);
+            response = client.execute(getRequest);
 
-            if (response.getStatusLine().getStatusCode() == 200) {
-                ResponseHandler<String> handler = new BasicResponseHandler();
-                String body = handler.handleResponse(response);
-                logger.debug(body);
-            } else {
-                logger.error("response is error : " + response.getStatusLine().getStatusCode());
-            }
+//            if (response.getStatusLine().getStatusCode() == 200) {
+//                ResponseHandler<String> handler = new BasicResponseHandler();
+//                String body = handler.handleResponse(response);
+//                logger.debug(body);
+//            } else {
+//                logger.error("response is error : " + response.getStatusLine().getStatusCode());
+//            }
 
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
-            e.printStackTrace();
+            throw e;
         }
+
+        return response;
     }
 
-    public static void post(String requestURL, String jsonMessage) {
-
+    public static HttpResponse post(String requestURL, String jsonMessage) throws Exception {
+        HttpResponse response;
         try {
             HttpClient client = HttpClientBuilder.create().build();
             HttpPost postRequest = new HttpPost(requestURL);
@@ -47,18 +50,20 @@ public class HttpUtil {
 
             postRequest.setEntity(new StringEntity(jsonMessage));
 
-            HttpResponse response = client.execute(postRequest);
+            response = client.execute(postRequest);
 
-            if (response.getStatusLine().getStatusCode() == 200) {
-                ResponseHandler<String> handler = new BasicResponseHandler();
-                String body = handler.handleResponse(response);
-                logger.debug(body);
-            } else {
-                logger.error("response is error : " + response.getStatusLine().getStatusCode());
-            }
+//            if (response.getStatusLine().getStatusCode() == 200) {
+//                ResponseHandler<String> handler = new BasicResponseHandler();
+//                String body = handler.handleResponse(response);
+//                logger.debug(body);
+//            } else {
+//                logger.error("response is error : " + response.getStatusLine().getStatusCode());
+//            }
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
-            e.printStackTrace();
+            throw e;
         }
+
+        return response;
     }
 }

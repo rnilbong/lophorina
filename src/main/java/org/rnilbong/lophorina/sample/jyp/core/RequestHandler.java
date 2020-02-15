@@ -1,5 +1,9 @@
 package org.rnilbong.lophorina.sample.jyp.core;
 
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.rnilbong.lophorina.sample.jyp.utils.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,23 +32,24 @@ public class RequestHandler extends Thread {
     public void run() {
         logger.debug("WebServer Thread Created");
         BufferedReader inFromClient;
-        DataOutputStream outToClient;
+        BufferedWriter outToClient;
 
         try {
             inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+//            outToClient = new DataOutputStream(connectionSocket.getOutputStream()); //image
+            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream())); //http
 
             //head
             String requestMessageLine = inFromClient.readLine();
             if (requestMessageLine == null) {
                 return;
             }
-            System.out.println(requestMessageLine);
+            logger.debug("head: " + requestMessageLine);
 
             //request header
             String headerLine;
             while ((headerLine = inFromClient.readLine()).length() != 0) {
-                System.out.println(headerLine);
+                logger.debug("request header: " + headerLine);
             }
 
             //request body
@@ -52,43 +57,69 @@ public class RequestHandler extends Thread {
             while (inFromClient.ready()) {
                 payload.append((char) inFromClient.read());
             }
-            System.out.println("Payload data is: " + payload.toString());
+            logger.debug("Payload data: " + payload.toString());
 
             StringTokenizer tokenizedLine = new StringTokenizer(requestMessageLine);
 
             String requestMethod = tokenizedLine.nextToken();
             String requestUrl = "";
 
+            HttpResponse httpResponse = null;
             if (requestMethod.equals("GET")) {
                 requestUrl = tokenizedLine.nextToken();
 
-                HttpUtil.get(getPassUrl() + requestUrl + "v1/sample");
+                httpResponse = HttpUtil.get(getPassUrl() + requestUrl);
+                logger.debug(httpResponse.toString());
             } else if (requestMethod.equals("POST")) {
                 requestUrl = tokenizedLine.nextToken();
 
-                HttpUtil.post(getPassUrl() + requestUrl + "v1/sample", payload.toString());
+                httpResponse = HttpUtil.post(getPassUrl() + requestUrl, payload.toString());
+                logger.debug(httpResponse.toString());
             } else {
-                outToClient.writeBytes("HTTP/1.0 400 Bad Request Message \r\n");
-                outToClient.writeBytes("Connection: close\r\n");
-                outToClient.writeBytes("\r\n");
+                outToClient.write("HTTP/1.1 400 Bad Request Message \r\n");
+                outToClient.write("Connection: close\r\n");
+                outToClient.write("\r\n");
                 logger.error("Bad Request");
             }
 
-            getMainImage(requestUrl, outToClient);
+            if (httpResponse != null) {
+                sendResponse(httpResponse, outToClient);
+            }
+//            sendResponseDefaultImage(requestUrl, outToClient);
 
             connectionSocket.close();
             logger.debug("Connection Closed");
         } catch (IOException ioe) {
-            logger.error(ioe.getLocalizedMessage());
+            logger.error("ioe :" + ioe.getLocalizedMessage());
             ioe.printStackTrace();
+        } catch (Exception e) {
+            logger.error("e :" + e.getLocalizedMessage());
+            e.printStackTrace();
         }
     }
 
     private String getPassUrl() {
         return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
+    
+    private void sendResponse(HttpResponse httpResponse, BufferedWriter outToClient) throws IOException {
+        StringBuilder outputHeader = new StringBuilder();
+        outputHeader.append("HTTP/1.1 200 OK")
+                .append("\r\n");
+        for (Header header : httpResponse.getAllHeaders()) {
+            outputHeader.append(header.toString())
+                    .append("\r\n");
+        }
 
-    private void getMainImage(String requestUrl, DataOutputStream outToClient) throws IOException {
+        ResponseHandler<String> handler = new BasicResponseHandler();
+        String body = handler.handleResponse(httpResponse);
+
+        logger.debug(outputHeader + "\r\n\r\n" + body);
+        outToClient.write(outputHeader + "\r\n\r\n");
+        outToClient.write(body, 0, body.length());
+    }
+
+    private void sendResponseDefaultImage(String requestUrl, DataOutputStream outToClient) throws IOException {
         if (requestUrl.startsWith("/")) {
             if (requestUrl.length() > 1) {
                 requestUrl = requestUrl.substring(1);
