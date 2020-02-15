@@ -12,6 +12,12 @@ import java.util.StringTokenizer;
 public class RequestHandler extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
     private static final String DEFAULT_FILE_PATH = "images/Lophorina.jpg";
+
+    private static final String DEFAULT_DOMAIN = "http://localhost";
+    private static final String DEFAULT_PORT = "8080";
+
+    private static final String PORT_DELIMITER = ":";
+
     private Socket connectionSocket;
 
     public RequestHandler(Socket connectionSocket) {
@@ -28,7 +34,26 @@ public class RequestHandler extends Thread {
             inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
             outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 
+            //head
             String requestMessageLine = inFromClient.readLine();
+            if (requestMessageLine == null) {
+                return;
+            }
+            System.out.println(requestMessageLine);
+
+            //request header
+            String headerLine;
+            while ((headerLine = inFromClient.readLine()).length() != 0) {
+                System.out.println(headerLine);
+            }
+
+            //request body
+            StringBuilder payload = new StringBuilder();
+            while (inFromClient.ready()) {
+                payload.append((char) inFromClient.read());
+            }
+            System.out.println("Payload data is: " + payload.toString());
+
             StringTokenizer tokenizedLine = new StringTokenizer(requestMessageLine);
 
             String requestMethod = tokenizedLine.nextToken();
@@ -36,14 +61,12 @@ public class RequestHandler extends Thread {
 
             if (requestMethod.equals("GET")) {
                 requestUrl = tokenizedLine.nextToken();
-                HttpUtil.get("http://localhost" + ":8080" + requestUrl + "v1/sample");
-            } else if(requestMethod.equals("POST")) {
+
+                HttpUtil.get(getPassUrl() + requestUrl + "v1/sample");
+            } else if (requestMethod.equals("POST")) {
                 requestUrl = tokenizedLine.nextToken();
-                HttpUtil.post("http://localhost" + ":8080" + requestUrl + "v1/sample", "[\n" +
-                        "  \"1\",\n" +
-                        "  \"2\",\n" +
-                        "  \"3\"\n" +
-                        "]");
+
+                HttpUtil.post(getPassUrl() + requestUrl + "v1/sample", payload.toString());
             } else {
                 outToClient.writeBytes("HTTP/1.0 400 Bad Request Message \r\n");
                 outToClient.writeBytes("Connection: close\r\n");
@@ -59,6 +82,10 @@ public class RequestHandler extends Thread {
             logger.error(ioe.getLocalizedMessage());
             ioe.printStackTrace();
         }
+    }
+
+    private String getPassUrl() {
+        return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
 
     private void getMainImage(String requestUrl, DataOutputStream outToClient) throws IOException {
