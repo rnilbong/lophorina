@@ -1,0 +1,165 @@
+{
+	"info": {
+		"_postman_id": "13eaca50-d3bd-4bfd-8c81-667d7246d316",
+		"name": "lophorina",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "body-json-arr",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n  \"1\",\n  \"2\",\n  \"3\"\n]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost/v1/sample",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"sample"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "body-json-obj",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"test\",\n    \"pw\": \"1234\",\n    \"age\": 20\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost/v1/sample/member",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"sample",
+						"member"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-page",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost/v1/sample/page/hihi",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"sample",
+						"page",
+						"hihi"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-json",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost/v1/sample",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"sample"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-str",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost/v1/sample/param?id=id&pw=pw",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"v1",
+						"sample",
+						"param"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "id"
+						},
+						{
+							"key": "pw",
+							"value": "pw"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
