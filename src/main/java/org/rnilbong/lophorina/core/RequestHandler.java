@@ -78,7 +78,7 @@ public class RequestHandler extends Thread {
             StringTokenizer tokenizedLine = new StringTokenizer(requestMessageLine);
 
             String requestMethod = tokenizedLine.nextToken();
-            String requestUrl = "";
+            String requestUrl;
 
             HttpResponse httpResponse = null;
             if (requestMethod.equals("GET")) {
@@ -117,7 +117,7 @@ public class RequestHandler extends Thread {
     private String getPassUrl() {
         return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
-    
+
     private void sendResponse(HttpResponse httpResponse, BufferedWriter outToClient) throws IOException {
         StringBuilder outputHeader = new StringBuilder();
         outputHeader.append(httpResponse.getStatusLine())
@@ -140,10 +140,11 @@ public class RequestHandler extends Thread {
             body = handler.handleResponse(httpResponse);
         }
 
-        logger.debug(outputHeader + "\r\n" + (isJson ? gson.toJson(body) : body));
+        logger.debug(outputHeader + "\r\n\r\n" + (isJson ? gson.toJson(body) : body));
 
         outToClient.write(outputHeader + "\r\n");
         outToClient.write(isJson ? gson.toJson(body) : body);
+
         outToClient.flush();
         outToClient.close();
     }
