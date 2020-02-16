@@ -1,8 +1,6 @@
-package org.rnilbong.lophorina.sample.jyp.core;
+package org.rnilbong.lophorina.core;
 
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class RequestHandlerTest {
 
