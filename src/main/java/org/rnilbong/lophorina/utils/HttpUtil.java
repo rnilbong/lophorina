@@ -9,14 +9,20 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 public class HttpUtil {
     private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
 
-    public static HttpResponse get(String requestURL) throws Exception {
+    public static HttpResponse get(String requestURL, Map<String, String> headerMap) throws Exception {
         HttpResponse response;
         try {
             HttpClient client = HttpClientBuilder.create().build();
             HttpGet getRequest = new HttpGet(requestURL);
+
+            for (String key : headerMap.keySet()) {
+                getRequest.addHeader(key, headerMap.get(key));
+            }
 
             response = client.execute(getRequest);
 
@@ -36,7 +42,7 @@ public class HttpUtil {
         return response;
     }
 
-    public static HttpResponse post(String requestURL, String jsonMessage) throws Exception {
+    public static HttpResponse post(String requestURL, String jsonMessage, Map<String, String> headerMap) throws Exception {
         HttpResponse response;
         try {
             HttpClient client = HttpClientBuilder.create().build();

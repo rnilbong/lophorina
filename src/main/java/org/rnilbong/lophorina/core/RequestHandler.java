@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 /*
@@ -48,12 +50,14 @@ public class RequestHandler extends Thread {
     public void run() {
         logger.debug("WebServer Thread Created");
         BufferedReader inFromClient;
-        BufferedWriter outToClient;
+        DataOutputStream outToClient;
+//        BufferedWriter outToClient;
+        Map<String, String> headerMap = new HashMap<>();
 
         try {
             inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-//            outToClient = new DataOutputStream(connectionSocket.getOutputStream()); //image
-            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream())); //http
+            outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+//            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
 
             //head
             String requestMessageLine = inFromClient.readLine();
@@ -61,10 +65,14 @@ public class RequestHandler extends Thread {
                 return;
             }
             logger.debug("head: " + requestMessageLine);
+//            String[] headSplitStr = requestMessageLine.split(": ");
+//            headerMap.put(headSplitStr[0], headSplitStr[1]);
 
             //request header
             String headerLine;
             while ((headerLine = inFromClient.readLine()).length() != 0) {
+                String[] headerSplitStr = headerLine.split(": ");
+                headerMap.put(headerSplitStr[0], headerSplitStr[1]);
                 logger.debug("request header: " + headerLine);
             }
 
@@ -84,17 +92,17 @@ public class RequestHandler extends Thread {
             if (requestMethod.equals("GET")) {
                 requestUrl = tokenizedLine.nextToken();
 
-                httpResponse = HttpUtil.get(getPassUrl() + requestUrl);
+                httpResponse = HttpUtil.get(getPassUrl() + requestUrl, headerMap);
                 logger.debug(httpResponse.toString());
             } else if (requestMethod.equals("POST")) {
                 requestUrl = tokenizedLine.nextToken();
 
-                httpResponse = HttpUtil.post(getPassUrl() + requestUrl, payload.toString());
+                httpResponse = HttpUtil.post(getPassUrl() + requestUrl, payload.toString(), headerMap);
                 logger.debug(httpResponse.toString());
             } else {
-                outToClient.write("HTTP/1.1 400 Bad Request Message \r\n");
-                outToClient.write("Connection: close\r\n");
-                outToClient.write("\r\n");
+                outToClient.writeBytes("HTTP/1.1 400 Bad Request Message \r\n");
+                outToClient.writeBytes("Connection: close\r\n");
+                outToClient.writeBytes("\r\n");
                 logger.error("Bad Request");
             }
 
@@ -118,18 +126,12 @@ public class RequestHandler extends Thread {
         return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
 
-    private void sendResponse(HttpResponse httpResponse, BufferedWriter outToClient) throws IOException {
+    private void sendResponse(HttpResponse httpResponse, DataOutputStream outToClient) throws IOException {
         StringBuilder outputHeader = new StringBuilder();
         outputHeader.append(httpResponse.getStatusLine())
                 .append("\r\n");
 
-        boolean isJson = false;
         for (Header header : httpResponse.getAllHeaders()) {
-            if (header.getName().equals("Content-Type")) {
-                if (header.getValue().contains("json")) {
-                    isJson = true;
-                }
-            }
             outputHeader.append(header.toString())
                     .append("\r\n");
         }
@@ -140,10 +142,10 @@ public class RequestHandler extends Thread {
             body = handler.handleResponse(httpResponse);
         }
 
-        logger.debug(outputHeader + "\r\n\r\n" + (isJson ? gson.toJson(body) : body));
+        logger.debug(outputHeader + "\r\n\r\n" + body);
 
-        outToClient.write(outputHeader + "\r\n");
-        outToClient.write(isJson ? gson.toJson(body) : body);
+        outToClient.writeBytes(outputHeader + "\r\n");
+        outToClient.writeBytes(body);
 
         outToClient.flush();
         outToClient.close();
