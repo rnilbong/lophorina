@@ -1,10 +1,12 @@
 package org.rnilbong.lophorina.core;
 
 import com.google.gson.Gson;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.util.EntityUtils;
 import org.rnilbong.lophorina.utils.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -49,14 +52,12 @@ public class RequestHandler extends Thread {
     @Override
     public void run() {
         logger.debug("WebServer Thread Created");
-        BufferedReader inFromClient;
-        DataOutputStream outToClient;
 //        BufferedWriter outToClient;
         Map<String, String> headerMap = new HashMap<>();
 
-        try {
-            inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+        try (BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+             DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+        ) {
 //            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
 
             //head
@@ -131,23 +132,21 @@ public class RequestHandler extends Thread {
         outputHeader.append(httpResponse.getStatusLine())
                 .append("\r\n");
 
-        boolean isChunked = false;
-        for (Header header : httpResponse.getAllHeaders()) {
-            if (header.getName().equals("Transfer-Encoding")) {
-                isChunked = true;
-                continue;
-            }
-            outputHeader.append(header.toString())
-                    .append("\r\n");
-        }
+        Arrays.stream(httpResponse.getAllHeaders())
+                .filter(header -> !header.getName().equals("Transfer-Encoding"))
+                .forEach(header -> {
+                    outputHeader.append(header.toString())
+                                .append("\r\n");
+                });
 
         String body = "";
         if (String.valueOf(httpResponse.getStatusLine().getStatusCode()).startsWith("2")) {
             ResponseHandler<String> handler = new BasicResponseHandler();
             body = handler.handleResponse(httpResponse);
+
         }
 
-        if (isChunked) {
+        if(httpResponse.getEntity().isChunked()) { //Chunk 데이터이면 length 추가
             outputHeader.append("Content-Length: ")
                     .append(body.length())
                     .append("\r\n");
@@ -159,7 +158,7 @@ public class RequestHandler extends Thread {
         outToClient.writeBytes(body);
 
         outToClient.flush();
-        outToClient.close();
+//        outToClient.close();
     }
 
     private void sendResponseDefaultImage(String requestUrl, DataOutputStream outToClient) throws IOException {
