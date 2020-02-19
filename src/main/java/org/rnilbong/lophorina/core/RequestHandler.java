@@ -49,14 +49,12 @@ public class RequestHandler extends Thread {
     @Override
     public void run() {
         logger.debug("WebServer Thread Created");
-        BufferedReader inFromClient;
-        DataOutputStream outToClient;
 //        BufferedWriter outToClient;
         Map<String, String> headerMap = new HashMap<>();
 
-        try {
-            inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+        try (BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+             DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+        ) {
 //            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
 
             //head
@@ -159,7 +157,7 @@ public class RequestHandler extends Thread {
         outToClient.writeBytes(body);
 
         outToClient.flush();
-        outToClient.close();
+//        outToClient.close();
     }
 
     private void sendResponseDefaultImage(String requestUrl, DataOutputStream outToClient) throws IOException {
