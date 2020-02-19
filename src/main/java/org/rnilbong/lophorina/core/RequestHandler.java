@@ -131,7 +131,12 @@ public class RequestHandler extends Thread {
         outputHeader.append(httpResponse.getStatusLine())
                 .append("\r\n");
 
+        boolean isChunked = false;
         for (Header header : httpResponse.getAllHeaders()) {
+            if (header.getName().equals("Transfer-Encoding")) {
+                isChunked = true;
+                continue;
+            }
             outputHeader.append(header.toString())
                     .append("\r\n");
         }
@@ -140,6 +145,12 @@ public class RequestHandler extends Thread {
         if (String.valueOf(httpResponse.getStatusLine().getStatusCode()).startsWith("2")) {
             ResponseHandler<String> handler = new BasicResponseHandler();
             body = handler.handleResponse(httpResponse);
+        }
+
+        if (isChunked) {
+            outputHeader.append("Content-Length: ")
+                    .append(body.length())
+                    .append("\r\n");
         }
 
         logger.debug(outputHeader + "\r\n\r\n" + body);
