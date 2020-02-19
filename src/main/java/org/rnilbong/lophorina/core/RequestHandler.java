@@ -144,6 +144,9 @@ public class RequestHandler extends Thread {
             ResponseHandler<String> handler = new BasicResponseHandler();
             body = handler.handleResponse(httpResponse);
 
+        }
+
+        if(httpResponse.getEntity().isChunked()) { //Chunk 데이터이면 length 추가
             outputHeader.append("Content-Length: ")
                     .append(body.length())
                     .append("\r\n");
