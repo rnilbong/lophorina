@@ -1,8 +1,8 @@
 package org.rnilbong.lophorina.core;
 
-import com.google.gson.Gson;
 import org.apache.http.HttpResponse;
-import org.rnilbong.lophorina.core.response.HttpResponseSender;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.rnilbong.lophorina.utils.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,22 +10,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-
-/*
- * todo
- * 1. target server api 에 다양한 api 추가
- *     1. 여러가지 응답 확인
- *         1. 현재 json 타입이 클라이언트로 전달 안됨
- *     1. 여러가지 메서드 확인
- *         1. 현재 post, get 확인
- * 1. 404 등 에러 처리
- * 1. 코어기능 추가
- * 1. 코어 코드 리펙토링
- * 1. 테스트 코드
- */
 
 public class RequestHandler extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
@@ -36,35 +24,25 @@ public class RequestHandler extends Thread {
 
     private static final String PORT_DELIMITER = ":";
 
-    private Gson gson;
     private Socket connectionSocket;
 
     public RequestHandler(Socket connectionSocket) {
         this.connectionSocket = connectionSocket;
-        this.gson = new Gson();
     }
 
     @Override
     public void run() {
         logger.debug("WebServer Thread Created");
-        BufferedReader inFromClient;
-        DataOutputStream outToClient;
-//        BufferedWriter outToClient;
         Map<String, String> headerMap = new HashMap<>();
 
-        try {
-            inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
-            outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-//            outToClient = new BufferedWriter(new OutputStreamWriter(connectionSocket.getOutputStream()));
-
-            //head
+        try (BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+             DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream())) {
+            //http call head
             String requestMessageLine = inFromClient.readLine();
             if (requestMessageLine == null) {
                 return;
             }
             logger.debug("head: " + requestMessageLine);
-//            String[] headSplitStr = requestMessageLine.split(": ");
-//            headerMap.put(headSplitStr[0], headSplitStr[1]);
 
             //request header
             String headerLine;
@@ -87,25 +65,37 @@ public class RequestHandler extends Thread {
             String requestUrl;
 
             HttpResponse httpResponse = null;
-            if (requestMethod.equals("GET")) {
-                requestUrl = tokenizedLine.nextToken();
-
-                httpResponse = HttpUtil.get(getPassUrl() + requestUrl, headerMap);
-                logger.debug(httpResponse.toString());
-            } else if (requestMethod.equals("POST")) {
-                requestUrl = tokenizedLine.nextToken();
-
-                httpResponse = HttpUtil.post(getPassUrl() + requestUrl, payload.toString(), headerMap);
-                logger.debug(httpResponse.toString());
-            } else {
-                outToClient.writeBytes("HTTP/1.1 400 Bad Request Message \r\n");
-                outToClient.writeBytes("Connection: close\r\n");
-                outToClient.writeBytes("\r\n");
-                logger.error("Bad Request");
+            switch (requestMethod) {
+                case "GET":
+                    requestUrl = tokenizedLine.nextToken();
+                    httpResponse = HttpUtil.get(getPassUrl() + requestUrl, headerMap);
+                    logger.debug(httpResponse.toString());
+                    break;
+                case "POST":
+                    requestUrl = tokenizedLine.nextToken();
+                    httpResponse = HttpUtil.post(getPassUrl() + requestUrl, payload.toString(), headerMap);
+                    logger.debug(httpResponse.toString());
+                    break;
+                case "PUT":
+                    requestUrl = tokenizedLine.nextToken();
+                    httpResponse = HttpUtil.put(getPassUrl() + requestUrl, payload.toString(), headerMap);
+                    logger.debug(httpResponse.toString());
+                    break;
+                case "DELETE":
+                    requestUrl = tokenizedLine.nextToken();
+                    httpResponse = HttpUtil.delete(getPassUrl() + requestUrl, headerMap);
+                    logger.debug(httpResponse.toString());
+                    break;
+                default:
+                    outToClient.writeBytes("HTTP/1.1 400 Bad Request\r\n");
+                    outToClient.writeBytes("Connection: close\r\n");
+                    outToClient.writeBytes("\r\n");
+                    logger.error("Bad Request");
+                    break;
             }
 
             if (httpResponse != null) {
-                new HttpResponseSender().returnResponse(httpResponse, outToClient);
+                sendResponse(httpResponse, outToClient);
             }
 
             connectionSocket.close();
@@ -123,6 +113,36 @@ public class RequestHandler extends Thread {
         return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
 
+    private void sendResponse(HttpResponse httpResponse, DataOutputStream outToClient) throws IOException {
+        StringBuilder outputHeader = new StringBuilder();
+        outputHeader.append(httpResponse.getStatusLine())
+                .append("\r\n");
+
+        Arrays.stream(httpResponse.getAllHeaders())
+                .filter(header -> !header.getName().equals("Transfer-Encoding"))
+                .forEach(header -> outputHeader.append(header.toString())
+                        .append("\r\n"));
+
+        String body = "";
+        if (String.valueOf(httpResponse.getStatusLine().getStatusCode()).startsWith("2")) {
+            ResponseHandler<String> handler = new BasicResponseHandler();
+            body = handler.handleResponse(httpResponse);
+
+        }
+
+        if (httpResponse.getEntity().isChunked()) { //Chunk 데이터이면 length 추가
+            outputHeader.append("Content-Length: ")
+                    .append(body.length())
+                    .append("\r\n");
+        }
+
+        logger.debug(outputHeader + "\r\n\r\n" + body);
+
+        outToClient.writeBytes(outputHeader + "\r\n");
+        outToClient.writeBytes(body);
+
+        outToClient.flush();
+    }
 
     private void sendResponseDefaultImage(String requestUrl, DataOutputStream outToClient) throws IOException {
         if (requestUrl.startsWith("/")) {
