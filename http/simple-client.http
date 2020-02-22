@@ -1,0 +1,34 @@
+###
+GET {{host}}/v1/sample
+Content-Type: application/json
+
+
+###
+GET {{host}}/v1/sample/param?id=123&pw=456
+Content-Type: application/json
+
+
+###
+POST {{host}}/v1/sample
+Content-Type: application/json
+
+["hello", "world", "my", "name"]
+
+
+###
+POST {{host}}/v1/sample/member
+Content-Type: application/json
+
+{
+  "id": "myid",
+  "pw": "mypw",
+  "age": 15
+}
+
+
+###
+GET {{host}}/v1/sample/page/hello
+Content-Type: application/json
+
+
+###
