@@ -1,10 +1,8 @@
 package org.rnilbong.lophorina.core;
 
 import com.google.gson.Gson;
-import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.impl.client.BasicResponseHandler;
+import org.rnilbong.lophorina.core.response.HttpResponseSender;
 import org.rnilbong.lophorina.utils.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,9 +105,8 @@ public class RequestHandler extends Thread {
             }
 
             if (httpResponse != null) {
-                sendResponse(httpResponse, outToClient);
+                new HttpResponseSender().returnResponse(httpResponse, outToClient);
             }
-//            sendResponseDefaultImage(requestUrl, outToClient);
 
             connectionSocket.close();
             logger.debug("Connection Closed");
@@ -126,30 +123,6 @@ public class RequestHandler extends Thread {
         return DEFAULT_DOMAIN + PORT_DELIMITER + DEFAULT_PORT;
     }
 
-    private void sendResponse(HttpResponse httpResponse, DataOutputStream outToClient) throws IOException {
-        StringBuilder outputHeader = new StringBuilder();
-        outputHeader.append(httpResponse.getStatusLine())
-                .append("\r\n");
-
-        for (Header header : httpResponse.getAllHeaders()) {
-            outputHeader.append(header.toString())
-                    .append("\r\n");
-        }
-
-        String body = "";
-        if (String.valueOf(httpResponse.getStatusLine().getStatusCode()).startsWith("2")) {
-            ResponseHandler<String> handler = new BasicResponseHandler();
-            body = handler.handleResponse(httpResponse);
-        }
-
-        logger.debug(outputHeader + "\r\n\r\n" + body);
-
-        outToClient.writeBytes(outputHeader + "\r\n");
-        outToClient.writeBytes(body);
-
-        outToClient.flush();
-        outToClient.close();
-    }
 
     private void sendResponseDefaultImage(String requestUrl, DataOutputStream outToClient) throws IOException {
         if (requestUrl.startsWith("/")) {

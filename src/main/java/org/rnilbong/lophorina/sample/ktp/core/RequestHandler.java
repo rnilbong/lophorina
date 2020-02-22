@@ -33,6 +33,10 @@ public class RequestHandler implements Runnable {
         }
     }
 
+    private void responseHttp(){
+
+    }
+
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
