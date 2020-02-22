@@ -8,8 +8,6 @@ import java.io.IOException;
 
 public class HttpResponseSender {
 
-    public static final String TRANSFER_ENCODING = "Transfer-Encoding";
-
     public void returnResponse(org.apache.http.HttpResponse httpResponse, DataOutputStream dataOutputStream) throws IOException {
         HttpHeader.TransferEncoding encoding = getTransferEncoding(httpResponse);
 
@@ -19,14 +17,17 @@ public class HttpResponseSender {
         }
 
         if(HttpHeader.TransferEncoding.CHUNKED == encoding){
-            responseServlet = new HttpCheckedResponseServlet();
+            responseServlet = new HttpChunkedResponseServlet();
         }
 
         responseServlet.sendResponse(httpResponse, dataOutputStream);
     }
 
-    private HttpHeader.TransferEncoding getTransferEncoding(org.apache.http.HttpResponse httpresponse){
-        Header header = httpresponse.getFirstHeader(TRANSFER_ENCODING);
-        return header == null ? HttpHeader.TransferEncoding.NONE : HttpHeader.TransferEncoding.getEntity(header.getValue());
+    private HttpHeader.TransferEncoding getTransferEncoding(org.apache.http.HttpResponse httpResponse){
+        if(httpResponse.getEntity().isChunked()){
+            return HttpHeader.TransferEncoding.CHUNKED;
+        }
+
+        return HttpHeader.TransferEncoding.NONE;
     }
 }

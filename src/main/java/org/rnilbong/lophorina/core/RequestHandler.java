@@ -3,6 +3,7 @@ package org.rnilbong.lophorina.core;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.rnilbong.lophorina.core.response.HttpResponseSender;
 import org.rnilbong.lophorina.utils.HttpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +96,9 @@ public class RequestHandler extends Thread {
             }
 
             if (httpResponse != null) {
-                sendResponse(httpResponse, outToClient);
+                //ktpark
+                new HttpResponseSender().returnResponse(httpResponse, outToClient);
+                //sendResponse(httpResponse, outToClient);
             }
 
             connectionSocket.close();
